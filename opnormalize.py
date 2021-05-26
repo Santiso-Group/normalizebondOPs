@@ -54,22 +54,21 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
 
     neighbors = np.zeros((nmols,nmols))
-
-        for i in range(nmols):
-            for j in range(i+1,nmols):
-                if distance(coords[0][i],coords[0][j], pbc_vectors) <= cutoff:
-                    neighbors[i][j] = 1
-                    neighbors[j][i] = 1
-        nneighbors = np.sum(neighbors,axis=1)
-        f = open(cop,'r')
-        g = open(copnorm,'w')
-        orderparameters = []
-        for x in f:
-            orderparameters.append(x)
-        f.close()
-        bondops = np.array(orderparameters[(10+nmols):(10+2*nmols)],dtype=float)
-        normalops = bondops/(nneighbors+1)
-        np.savetxt(copnorm,normalops)
+    for i in range(nmols):
+        for j in range(i+1,nmols):
+            if distance(coords[0][i],coords[0][j], pbc_vectors) <= cutoff:
+                neighbors[i][j] = 1
+                neighbors[j][i] = 1
+    nneighbors = np.sum(neighbors,axis=1)
+    f = open(cop,'r')
+    g = open(copnorm,'w')
+    orderparameters = []
+    for x in f:
+        orderparameters.append(x)
+    f.close()
+    bondops = np.array(orderparameters[(10+nmols):(10+2*nmols)],dtype=float)
+    normalops = bondops/(nneighbors+1)
+    np.savetxt(copnorm,normalops)
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm = getargs()
