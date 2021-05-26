@@ -18,7 +18,7 @@ def getargs():
     parser.add_argument("--origin", help="origin atom", default=0, type=int)
     parser.add_argument("--atomspermol", help="number of atoms per molecule", default=1, type=int)
     parser.add_argument("--nmols", help="number of molecules in the frame", default=1, type=int)
-    parser.add_argument("--cutoff", help="cutoff distance in angstrom," default=1, type=float)
+    parser.add_argument("--cutoff", help="cutoff distance in angstrom,", default=1, type=float)
     parser.add_argument("--cop", help="name of the cop file", default='', type=str)
     parser.add_argument("--copnorm", help="name of the normalized cop file", default='', type=str)
     args = parser.parse_args() #put command line arguments into args variable
@@ -37,6 +37,7 @@ def distance(a,b,bounds):
     min_dists = np.min(np.dstack(((a - b) % bounds, (b - a) % bounds)), axis = 2)
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
+
 def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
     atom_indices = np.zeros(nmols, dtype=int)
     for i in range(len(atom_indices)):
