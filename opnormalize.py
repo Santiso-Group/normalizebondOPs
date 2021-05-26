@@ -14,13 +14,13 @@ def getargs():
     '''
     parser = argparse.ArgumentParser() #define parser
     #get command line arguments.  includes default values and help text
-    parser.add_argument("--frame", help="name of the frame", default=300, type=str)
-    parser.add_argument("--origin", help="origin atom", default=10, type=int)
-    parser.add_argument("--atomspermol", help="number of atoms per molecule", default=0.1, type=int)
-    parser.add_argument("--nmols", help="number of molecules in the frame", default=0, type=int)
-    parser.add_argument("--cutoff", help="cutoff distance in angstrom," default=0, type=float)
-    parser.add_argument("--cop", help="name of the cop file", default=0.1, type=str)
-    parser.add_argument("--copnorm", help="name of the normalized cop file", default=0.1, type=str)
+    parser.add_argument("--frame", help="name of the frame", default='', type=str)
+    parser.add_argument("--origin", help="origin atom", default=0, type=int)
+    parser.add_argument("--atomspermol", help="number of atoms per molecule", default=1, type=int)
+    parser.add_argument("--nmols", help="number of molecules in the frame", default=1, type=int)
+    parser.add_argument("--cutoff", help="cutoff distance in angstrom," default=1, type=float)
+    parser.add_argument("--cop", help="name of the cop file", default='', type=str)
+    parser.add_argument("--copnorm", help="name of the normalized cop file", default='', type=str)
     args = parser.parse_args() #put command line arguments into args variable
     frame = args.frame
     origin = args.origin
@@ -37,15 +37,16 @@ def distance(a,b,bounds):
     min_dists = np.min(np.dstack(((a - b) % bounds, (b - a) % bounds)), axis = 2)
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
-    def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
-        atom_indices = np.zeros(nmols, dtype=int)
-        for i in range(len(atom_indices)):
-            atom_indices[i] = int(i*atomspermol+origin)
+def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
+    atom_indices = np.zeros(nmols, dtype=int)
+    for i in range(len(atom_indices)):
+        atom_indices[i] = int(i*atomspermol+origin)
 
         t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
         pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10))[0])
         coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+
         neighbors = np.zeros((nmols,nmols))
 
         for i in range(nmols):
@@ -56,16 +57,13 @@ def distance(a,b,bounds):
         nneighbors = np.sum(neighbors,axis=1)
         f = open(cop,'r')
         g = open(copnorm,'w')
-
         orderparameters = []
         for x in f:
             orderparameters.append(x)
-
         f.close()
-
         bondops = np.array(orderparameters[(10+nmols):(10+2*nmols)],dtype=float)
         normalops = bondops/(nneighbors+1)
-        np.savetxt(copnorm, normalops)
+        np.savetxt(copnorm,normalops)
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm = getargs()
