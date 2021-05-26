@@ -71,7 +71,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     np.savetxt(copnorm,normalops)
 
 def main():
-    frame,origin,atomspermol,nmols,cutoff,cop,copnorm = getargs()
+    frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname = getargs()
     normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname)
 
 if __name__ == '__main__':
