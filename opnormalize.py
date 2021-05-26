@@ -21,6 +21,7 @@ def getargs():
     parser.add_argument("--cutoff", help="cutoff distance in angstrom,", default=1, type=float)
     parser.add_argument("--cop", help="name of the cop file", default='', type=str)
     parser.add_argument("--copnorm", help="name of the normalized cop file", default='', type=str)
+    parser.add_argument("--resname", help="name of the residue", default='', type=str)
     args = parser.parse_args() #put command line arguments into args variable
     frame = args.frame
     origin = args.origin
@@ -29,7 +30,8 @@ def getargs():
     cutoff = args.cutoff
     cop = args.cop
     copnorm = args.copnorm
-    return frame,origin,atomspermol,nmols,cutoff,cop,copnorm #return variables
+    resname = args.resname
+    return frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname #return variables
 
 def distance(a,b,bounds):
     a = np.asarray((a))
@@ -38,17 +40,19 @@ def distance(a,b,bounds):
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
 
-def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
+def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
+    t = md.load(frame)
     atom_indices = np.zeros(nmols, dtype=int)
+    resindices = top.select(resname)
+    t = t.atom_slice(resindices)
     for i in range(len(atom_indices)):
         atom_indices[i] = int(i*atomspermol+origin)
-
-        t = t.atom_slice(atom_indices)
+    t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
-        pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10))[0])
-        coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10))[0])
+    coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
 
-        neighbors = np.zeros((nmols,nmols))
+    neighbors = np.zeros((nmols,nmols))
 
         for i in range(nmols):
             for j in range(i+1,nmols):
@@ -68,7 +72,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm = getargs()
-    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm)
+    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname)
 
 if __name__ == '__main__':
   main() #run main
