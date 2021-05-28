@@ -42,10 +42,7 @@ def distance(a,b,bounds):
 
 def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     t = md.load(frame)
-    top = md.load(frame).topology
     atom_indices = np.zeros(nmols, dtype=int)
-    resindices = top.select(resname)
-    t = t.atom_slice(resindices)
     for i in range(len(atom_indices)):
         atom_indices[i] = int(i*atomspermol+origin)
     t = t.atom_slice(atom_indices)
