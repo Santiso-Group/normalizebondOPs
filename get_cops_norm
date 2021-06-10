@@ -1,0 +1,56 @@
+#!/bin/bash
+# Calculate order parameters for a dcd trajectory and store them
+#
+# Usage: get_cops_norm <name of dcd file> <stride>
+
+if test -z "$2"
+then
+  echo "Usage: get_cops_norm <name of dcd file> <stride>"
+  exit
+fi
+
+# Hard-coded stuff
+source /home/jsavi/OPENV/bin/activate
+psffile='/home/jsavi/cliu/acn_solvent/getOPs2/1.pdb'
+mmpfile='/home/jsavi/cliu/acn_solvent/acn.mmp'
+xtpfile='/home/jsavi/cliu/acn_solvent/acn_box6.xtp'
+options='-numcells 0 -sfw 0.1 -cutoff 6.0'
+
+dcdfile=$1
+stride=$2
+catdcd='/usr/local/lib/vmd/plugins/LINUXAMD64/bin/catdcd5.2/catdcd'
+copcalc='/home/jsavi/GeneralOPs/copcalc/bin/copcalc'
+numframes=`$catdcd -num $dcdfile | grep "Total frames" | cut -d' ' -f3`
+thisdir=`pwd`
+:> copfiles
+mkdir -p copsnorm
+mkdir -p cops
+frame=1
+
+function runcops(){
+  echo 'frame number is:' $frame
+  $catdcd -o cops/$frame.pdb -otype pdb -s $psffile -stype pdb -first $frame \
+          -last $frame -dcd $dcdfile
+  echo $frame 'catdcd done'
+  $copcalc -pdb cops/$frame.pdb -mmp $mmpfile -xtp $xtpfile -cop cops/$frame.cop \
+           $options
+  echo $frame 'cop done'
+  python3 /home/jsavi/cliu/acn_solvent/getOPs2/opnormalize.py --frame cops/$frame.pdb --origin 0 --atomspermol 6 --nmols 3200 \
+                         --cutoff 6.0 --cop cops/$frame.cop --copnorm copsnorm/$frame.cop
+  echo $frame 'python done'
+  rm cops/$frame.pdb
+  echo "$thisdir/cops/$frame.cop" >> copfiles
+  frame=$(($frame+$stride))
+} 
+
+#while [ $frame -le $numframes ]; do
+#	runcops $frame &
+#done
+#wait
+
+for frame in $(seq 1 $numframes)
+do
+  sem 10
+  runcops $frame &
+done
+sem --wait

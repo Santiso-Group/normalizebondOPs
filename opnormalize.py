@@ -40,11 +40,13 @@ def distance(a,b,bounds):
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
 
-def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
+def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
     t = md.load(frame)
     top = md.load(frame).topology
     atom_indices = np.zeros(nmols, dtype=int)
-    resindices = top.select(resname)
+    
+    #hardcoded indices of solute here.  I will update this later.  Assumes solute is at the top of PDB file.
+    resindices = np.arange(9600,9600+nmols*atomspermol)
     t = t.atom_slice(resindices)
     for i in range(len(atom_indices)):
         atom_indices[i] = int(i*atomspermol+origin)
@@ -72,7 +74,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname = getargs()
-    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname)
+    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm)
 
 if __name__ == '__main__':
   main() #run main
