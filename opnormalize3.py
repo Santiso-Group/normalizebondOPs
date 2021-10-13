@@ -82,7 +82,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
     f.close()
     bondops = np.array(orderparameters[(10+nmols):(10+2*nmols)],dtype=float)
     normalops = bondops/(nneighbors)
-    np.savetxt(copnorm,normalops,nneighbors)
+    np.savetxt(copnorm,[normalops,nneighbors])
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname = getargs()
