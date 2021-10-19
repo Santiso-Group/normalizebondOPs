@@ -71,8 +71,12 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
         coords[i][2] = coords[i][2]-zm
         if coords[i][2] > pbc_vectors[2]:
             coords[i][2] = coords[i][2] - pbc_vectors[2]
-            
-    tree = cKDTree(coords,boxsize = pbc_vectors)
+    try:
+        tree = cKDTree(coords,boxsize = pbc_vectors)
+    except:
+        pbc_vectors = [max(coords[:,0]),max(coords[:,1]),max(coords[:,2])]
+        tree = cKDTree(coords,boxsize = pbc_vectors)
+        
     neighbors = tree.query_ball_tree(tree,cutoff)
     nneighbors = []
     for molecule in neighbors:
