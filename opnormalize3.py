@@ -41,17 +41,20 @@ def distance(a,b,bounds):
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
 
-def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
+def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     t = md.load(frame)
     top = md.load(frame).topology
     atom_indices = np.zeros(nmols, dtype=int)
-    resindices = np.arange(9600,9600+nmols*atomspermol)
+    res_string = 'resname ' + resname
+    #table, bonds = top.to_dataframe()
+    #print(table)
+    resindices = top.select(res_string)
     t = t.atom_slice(resindices)
     for i in range(len(atom_indices)):
         atom_indices[i] = int(i*atomspermol+origin)
     t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
-    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors)[0])
+    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors)[0]))
     coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
     coords = coords[0]
     xm = min(coords[:,0])
@@ -68,7 +71,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
         coords[i][2] = coords[i][2]-zm
         if coords[i][2] > pbc_vectors[2]:
             coords[i][2] = coords[i][2] - pbc_vectors[2]
-
+            
     tree = cKDTree(coords,boxsize = pbc_vectors)
     neighbors = tree.query_ball_tree(tree,cutoff)
     nneighbors = []
@@ -85,10 +88,9 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm):
     np.savetxt(copnorm,normalops)
     np.savetxt(copneighbors,nneighbors)
 
-
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname = getargs()
-    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm)
+    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname)
 
 if __name__ == '__main__':
   main() #run main
