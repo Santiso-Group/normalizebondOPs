@@ -54,7 +54,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
         atom_indices[i] = int(i*atomspermol+origin)
     t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
-    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors)[0]))
+    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10)[0]))
     coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
     coords = coords[0]
     xm = min(coords[:,0])
