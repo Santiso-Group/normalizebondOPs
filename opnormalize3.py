@@ -55,7 +55,7 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
     pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10)[0]))
-    coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+    coords = t.xyz #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
     coords = coords[0]
     xm = min(coords[:,0])
     ym = min(coords[:,1])
@@ -74,12 +74,6 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     try:
         tree = cKDTree(coords,boxsize = pbc_vectors)
     except:
-        coords = coords[0]
-            for i in range(len(coords)):
-                coords[i][0] = coords[i][0]-xm
-                coords[i][1] = coords[i][1]-ym
-                coords[i][2] = coords[i][2]-zm
-                
         pbc_vectors = [max(coords[:,0]),max(coords[:,1]),max(coords[:,2])]
         tree = cKDTree(coords,boxsize = pbc_vectors)
         
