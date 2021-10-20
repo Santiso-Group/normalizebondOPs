@@ -74,6 +74,12 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     try:
         tree = cKDTree(coords,boxsize = pbc_vectors)
     except:
+        coords = coords[0]
+            for i in range(len(coords)):
+                coords[i][0] = coords[i][0]-xm
+                coords[i][1] = coords[i][1]-ym
+                coords[i][2] = coords[i][2]-zm
+                
         pbc_vectors = [max(coords[:,0]),max(coords[:,1]),max(coords[:,2])]
         tree = cKDTree(coords,boxsize = pbc_vectors)
         
