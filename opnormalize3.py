@@ -4,6 +4,9 @@ import sys
 np.set_printoptions(threshold=sys.maxsize)
 import argparse
 from scipy.spatial import cKDTree
+from sklearn.neighbors import DistanceMetric
+from sklearn.neighbors import BallTree
+
 
 def getargs():
     '''
@@ -23,6 +26,7 @@ def getargs():
     parser.add_argument("--cop", help="name of the cop file", default='', type=str)
     parser.add_argument("--copnorm", help="name of the normalized cop file", default='', type=str)
     parser.add_argument("--resname", help="name of the residue", default='', type=str)
+    parser.add_argument("--copneighbor", help="name of the number of neighbors per normalized molecule", default='', type=str)
     args = parser.parse_args() #put command line arguments into args variable
     frame = args.frame
     origin = args.origin
@@ -34,6 +38,17 @@ def getargs():
     resname = args.resname
     return frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname #return variables
 
+class jsdistances():
+    def __init__(self, x):
+        self.bounds = x
+
+    def js_distance(self,a,b):
+        a = np.asarray((a))
+        b = np.asarray((b))
+        min_dists = np.min(np.dstack(((a - b) % self.bounds, (b - a) % self.bounds)), axis = 2)
+        dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
+        return dist
+
 def distance(a,b,bounds):
     a = np.asarray((a))
     b = np.asarray((b))
@@ -41,13 +56,11 @@ def distance(a,b,bounds):
     dist = np.sqrt(np.sum(min_dists ** 2, axis = 1))
     return dist
 
-def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
+def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname,copneighbor):
     t = md.load(frame)
     top = md.load(frame).topology
     atom_indices = np.zeros(nmols, dtype=int)
     res_string = 'resname ' + resname
-    #table, bonds = top.to_dataframe()
-    #print(table)
     resindices = top.select(res_string)
     t = t.atom_slice(resindices)
     for i in range(len(atom_indices)):
@@ -55,8 +68,15 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     t = t.atom_slice(atom_indices)
         #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
     pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10)[0]))
-    coords = t.xyz #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+    dist = jsdistances(pbc_vectors)
+    dist = DistanceMetric.get_metric(metric='pyfunc', func=dist.js_distance)
+    coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
     coords = coords[0]
+    tree = BallTree(coords, leaf_size=2, metric=dist)
+    nneighbors = tree.query_radius(coords[0], r=cutoff, count_only=True)
+
+
+    '''
     xm = min(coords[:,0])
     ym = min(coords[:,1])
     zm = min(coords[:,2])
@@ -76,25 +96,30 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname):
     except:
         pbc_vectors = [max(coords[:,0]),max(coords[:,1]),max(coords[:,2])]
         tree = cKDTree(coords,boxsize = pbc_vectors)
-        
+
     neighbors = tree.query_ball_tree(tree,cutoff)
     nneighbors = []
     for molecule in neighbors:
         nneighbors.append(len(molecule))
+    '''
+
+
     f = open(cop,'r')
-    g = open(copnorm,'w')
+    #g = open(copnorm,'w')
     orderparameters = []
     for x in f:
         orderparameters.append(x)
     f.close()
+
     bondops = np.array(orderparameters[(10+nmols):(10+2*nmols)],dtype=float)
     normalops = bondops/(nneighbors)
+
     np.savetxt(copnorm,normalops)
-    np.savetxt(copneighbors,nneighbors)
+    np.savetxt(copneighbor,nneighbors)
 
 def main():
     frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname = getargs()
-    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname)
+    normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname,copneighbor)
 
 if __name__ == '__main__':
   main() #run main
