@@ -66,14 +66,20 @@ def normalize(frame,origin,atomspermol,nmols,cutoff,cop,copnorm,resname,copneigh
     for i in range(len(atom_indices)):
         atom_indices[i] = int(i*atomspermol+origin)
     t = t.atom_slice(atom_indices)
-        #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
-    pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10)[0]))
-    dist = jsdistances(pbc_vectors)
-    dist = DistanceMetric.get_metric(metric='pyfunc', func=dist.js_distance)
-    coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+    
+    #get PBCs bounds.  This only works for orthohombic PBCs for the time being.  Might implement more general solution later.
+    #pbc_vectors = np.diag(np.asarray((t.unitcell_vectors*10)[0]))
+    #dist = jsdistances(pbc_vectors)
+    #dist = DistanceMetric.get_metric(metric='pyfunc', func=dist.js_distance)
+    #coords = t.xyz*10 #defines coordinates.  multiply by 10 to get angstroms, since mdtraj converts to nm.
+
     coords = coords[0]
-    tree = BallTree(coords, leaf_size=2, metric=dist)
-    nneighbors = tree.query_radius(coords[0], r=cutoff, count_only=True)
+    nneighbors = []
+    for i in range(len(atom_indices)):
+        neighbors = md.compute_neighbors(t, cutoff=cutoff/10, query_indices=[atom_indices[i]], haystack_indices=atom_indices, periodic=True)
+        nneighbors.append(len(neighbors[0]))
+
+    nneighbors = np.asarray(nneighbors)
 
 
     '''
